@@ -1,0 +1,21 @@
+server:
+  port: 8080
+  tomcat:
+    threads:
+      max: 200        # only relevant when virtual threads are OFF -- kept for the A/B comparison
+
+spring:
+  application:
+    name: vt-benchmark-springboot
+  threads:
+    virtual:
+      enabled: true    # the one-line switch from the original doc -- flip to false to compare
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,threaddump,env
+  endpoint:
+    health:
+      show-details: always
