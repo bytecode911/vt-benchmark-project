@@ -23,7 +23,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
             </plugin>
-            <!-- mvn compile exec:java  -Dexec.args="--tasks=10000" -->
+            <!-- Example: mvn compile exec:java -Dexec.args="tasks=10000" -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>

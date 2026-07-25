@@ -14,10 +14,10 @@ in the root README for the full diff/reasoning.
 ```bash
 cd standalone-benchmark
 
-# Default: 10,000 tasks, 200-thread platform pool, 1s delay, against a local mock server
+# Default: 3,000 tasks, 200-thread platform pool, 1s delay, against a local mock server
 mvn compile exec:java
 
-# Custom load
+# Custom load (use larger values on a beefier machine)
 mvn compile exec:java -Dexec.args="--tasks=20000 --poolSize=200 --delayMs=500"
 
 # Point at a real network endpoint instead of the local mock server

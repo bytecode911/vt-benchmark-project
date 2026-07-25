@@ -8,13 +8,13 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 
 /**
  * Fans a burst of concurrent calls out to /api/delay/{ms} on a fresh virtual-thread-per-task
@@ -42,16 +42,17 @@ public class LoadTestController {
 
         Instant start = Instant.now();
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<?>> futures = IntStream.range(0, calls)
-                    .mapToObj(i -> executor.submit(() -> {
-                        try {
-                            restClient.get().uri(url).retrieve().toBodilessEntity();
-                            success.incrementAndGet();
-                        } catch (Exception e) {
-                            failure.incrementAndGet();
-                        }
-                    }))
-                    .toList();
+            List<Future<?>> futures = new ArrayList<>();
+            for (int i = 0; i < calls; i++) {
+                futures.add(executor.submit(() -> {
+                    try {
+                        restClient.get().uri(url).retrieve().toBodilessEntity();
+                        success.incrementAndGet();
+                    } catch (Exception e) {
+                        failure.incrementAndGet();
+                    }
+                }));
+            }
             for (Future<?> f : futures) {
                 try {
                     f.get();
