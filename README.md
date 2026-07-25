@@ -49,6 +49,48 @@ java -XX:StartFlightRecording=filename=run.jfr ...  # open in JDK Mission Contro
                                                      # spent "Parking" vs actually running
 ```
 
+## Benchmark Results (JDK 21, Spring Boot 3.5.7)
+
+### Spring Boot Load Test: 3000 calls, 1000ms delay per call
+
+#### Virtual Threads = **true** ✅
+```
+Duration (s):           3.85
+Success:                2305
+Failures:               695
+Success Rate:           76.83%
+Throughput (req/s):     778.82
+
+Latency (ms)
+  Min:                  796
+  Avg:                  2059.84
+  p50:                  2152
+  p95:                  3183
+  p99:                  3645
+  Max:                  3785
+```
+
+#### Virtual Threads = **false** ❌
+```
+Duration (s):           11.64
+Success:                1965
+Failures:               1035
+Success Rate:           65.5%
+Throughput (req/s):     257.84
+
+Latency (ms)
+  Min:                  880
+  Avg:                  4468
+  p50:                  3342
+  p95:                  10362
+  p99:                  10480
+  Max:                  11548
+```
+
+**Verdict:** Virtual threads deliver **3x faster** completion time, **3x higher throughput**, and **2.2x lower latency** for I/O-bound workloads.
+
+---
+
 Sample run of `standalone-benchmark` in this sandbox (300 tasks, 50-thread pool, 200ms delay,
 local mock server — small numbers so it completes fast, same pattern holds at 10k):
 

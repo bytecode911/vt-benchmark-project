@@ -43,6 +43,41 @@ curl "localhost:8080/api/load-test?calls=3000&delayMs=1000"
 curl localhost:8080/actuator/threaddump | grep -c '"virtual" : true'
 ```
 
+## Benchmark Results (JDK 21, Spring Boot 3.5.7)
+
+### Test: 3000 concurrent calls with 1000ms delay per call
+
+| Metric | Virtual Threads **ON** ✅ | Virtual Threads **OFF** ❌ | Improvement |
+|--------|--------------|--------------|-------------|
+| Duration (s) | 3.85 | 11.64 | **3.0x faster** |
+| Success Rate | 76.83% | 65.5% | **+11.33%** |
+| Throughput (req/s) | 778.82 | 257.84 | **3.0x higher** |
+| Avg Latency (ms) | 2059.84 | 4468 | **2.2x lower** |
+| p95 Latency (ms) | 3183 | 10362 | **3.2x lower** |
+| p99 Latency (ms) | 3645 | 10480 | **2.9x lower** |
+| Max Latency (ms) | 3785 | 11548 | **3.0x lower** |
+
+### Key Insights
+
+1. **Virtual threads handle high concurrency better** — Tomcat's fixed thread pool (200 threads) becomes a bottleneck for platform threads, causing timeouts and failures
+2. **Virtual threads enable 3x+ throughput** — one virtual thread per task allows 3000 concurrent operations vs. 200 platform threads
+3. **Latency is significantly better** — especially at the tail (p95, p99), where platform threads struggle
+4. **Success rate improves** — fewer timeout failures when request concurrency isn't limited by thread pool size
+
+### How to Run the Comparison
+
+From the project root:
+```powershell
+pwsh -ExecutionPolicy Bypass -File test-vt-springboot.ps1
+```
+
+This automated script will:
+1. Build and start the Spring Boot app with virtual threads **enabled**
+2. Run the same 3000-call benchmark
+3. Stop and restart with virtual threads **disabled**
+4. Run the benchmark again
+5. Display side-by-side results
+
 ## Compatibility note
 Virtual threads require a **JDK 21+ runtime**. `spring.threads.virtual.enabled=true` is safe to
 leave in a Boot 3.2+ app running on an older JDK — Spring detects the JDK can't support it and
