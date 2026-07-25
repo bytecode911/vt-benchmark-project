@@ -8,7 +8,7 @@ package com.bytecode911.vtbench;
 public record BenchmarkConfig(int tasks, int poolSize, int delayMs, String url) {
 
     public static BenchmarkConfig fromArgs(String[] args) {
-        int tasks = 3_000;
+        int tasks = 10_000;
         int poolSize = 200;
         int delayMs = 1000;
         String url = null;

@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClient;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,16 +40,22 @@ public class LoadTestController {
         String url = "http://localhost:" + port + "/api/delay/" + delayMs;
         AtomicInteger success = new AtomicInteger();
         AtomicInteger failure = new AtomicInteger();
+        List<Long> latencies = Collections.synchronizedList(new ArrayList<>());
 
         Instant start = Instant.now();
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<?>> futures = new ArrayList<>();
             for (int i = 0; i < calls; i++) {
                 futures.add(executor.submit(() -> {
+                    long reqStart = System.currentTimeMillis();
                     try {
                         restClient.get().uri(url).retrieve().toBodilessEntity();
+                        long latency = System.currentTimeMillis() - reqStart;
+                        latencies.add(latency);
                         success.incrementAndGet();
                     } catch (Exception e) {
+                        long latency = System.currentTimeMillis() - reqStart;
+                        latencies.add(latency);
                         failure.incrementAndGet();
                     }
                 }));
@@ -62,10 +69,25 @@ public class LoadTestController {
             }
         }
         long durationMs = Duration.between(start, Instant.now()).toMillis();
+        double durationSec = durationMs / 1000.0;
+        double throughput = calls * 1000.0 / Math.max(1, durationMs);
 
-        return new LoadTestResult(calls, success.get(), failure.get(), durationMs,
-                calls * 1000.0 / Math.max(1, durationMs));
+        // Calculate latency percentiles
+        Collections.sort(latencies);
+        double minLatency = latencies.isEmpty() ? 0 : latencies.get(0);
+        double maxLatency = latencies.isEmpty() ? 0 : latencies.get(latencies.size() - 1);
+        double avgLatency = latencies.isEmpty() ? 0 : latencies.stream().mapToLong(Long::longValue).average().orElse(0);
+        double p50 = latencies.isEmpty() ? 0 : latencies.get((int) (latencies.size() * 0.50));
+        double p95 = latencies.isEmpty() ? 0 : latencies.get((int) (latencies.size() * 0.95));
+        double p99 = latencies.isEmpty() ? 0 : latencies.get((int) (latencies.size() * 0.99));
+
+        return new LoadTestResult(
+                calls, success.get(), failure.get(), durationSec, throughput,
+                minLatency, avgLatency, p50, p95, p99, maxLatency);
     }
 
-    public record LoadTestResult(int calls, int success, int failure, long durationMs, double throughputPerSec) {}
+    public record LoadTestResult(
+            int calls, int success, int failures, double durationSeconds, double throughputReqSec,
+            double latencyMinMs, double latencyAvgMs, double latencyP50Ms, 
+            double latencyP95Ms, double latencyP99Ms, double latencyMaxMs) {}
 }
